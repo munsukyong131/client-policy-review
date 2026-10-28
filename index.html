@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Client Policy Review</title>
+<meta name="description" content="Upload a client's insurance policy detail PDFs or screenshots and get a clear policy summary with points to discuss and internal advisor notes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=JetBrains+Mono:wght@400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<style>
+/* Layout: a workbench with inputs on the left and results on the right, stacking on phones. */
+:root {
+  --bg: #F4F5F7; --panel: #FFFFFF; --ink: #17213A; --muted: #5E6878; --line: #DFE2E8; --soft: #EDEFF3;
+  --navy: #1F2A44; --brass: #9A7438; --brass-soft: #F3EADB; --good: #067647; --warn: #B54708; --bad: #B42318;
+  --good-bg: #E3F6EA; --warn-bg: #FDF0E1; --bad-bg: #FCE7E5; --plan: #2C3A8C; --plan-bg: #E6EBFB;
+  --f-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --f-body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151E; --panel: #181E2A; --ink: #E7EAF0; --muted: #9AA3B2; --line: #2A3242; --soft: #202838;
+  --navy: #C9D3EA; --brass: #D3A867; --brass-soft: #2E2719; --good: #5FCB8C; --warn: #F0A55C; --bad: #F2877C;
+  --good-bg: #16301F; --warn-bg: #33240F; --bad-bg: #3A1A17; --plan: #A9B8F0; --plan-bg: #1E2541; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11151E; --panel: #181E2A; --ink: #E7EAF0; --muted: #9AA3B2; --line: #2A3242; --soft: #202838;
+  --navy: #C9D3EA; --brass: #D3A867; --brass-soft: #2E2719; --good: #5FCB8C; --warn: #F0A55C; --bad: #F2877C;
+  --good-bg: #16301F; --warn-bg: #33240F; --bad-bg: #3A1A17; --plan: #A9B8F0; --plan-bg: #1E2541; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.5; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 22px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; border-bottom: 2px solid var(--navy); padding-bottom: 12px; margin-bottom: 14px; }
+header.top h1 { font-family: var(--f-display); font-weight: 600; font-size: 30px; margin: 0; color: var(--navy); letter-spacing: -0.01em; }
+header.top h1 span { color: var(--brass); }
+header.top p { margin: 0; color: var(--muted); max-width: 62ch; }
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.tabs button { border: none; border-bottom: 3px solid transparent; border-radius: 0; background: none; padding: 9px 14px; font-size: 14px; color: var(--muted); }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--brass); }
+.tabs button small { display: block; font-weight: 500; font-size: 11.5px; color: var(--muted); }
+.grid { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+section.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; min-width: 0; }
+.step { display: flex; align-items: baseline; gap: 10px; margin: 0 0 10px; }
+.step b { font-family: var(--f-mono); font-size: 12px; color: var(--brass); font-weight: 500; white-space: nowrap; }
+.step h2 { font-size: 15px; margin: 0; font-weight: 700; text-wrap: balance; }
+.step .sp { flex: 1; }
+.hint { color: var(--muted); font-size: 12.5px; margin: 0 0 10px; }
+button { font: inherit; font-weight: 600; font-size: 13px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 7px 12px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button:focus-visible, textarea:focus-visible, select:focus-visible, input:focus-visible, label.drop:focus-within { outline: 2px solid var(--brass); outline-offset: 2px; }
+button.primary { background: var(--navy); color: var(--panel); border-color: var(--navy); }
+button:disabled { opacity: .5; cursor: default; }
+button.link { border: none; background: none; padding: 2px 4px; color: var(--brass); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+label.drop { display: block; position: relative; border: 1.5px dashed var(--line); border-radius: 8px; padding: 16px; text-align: center; cursor: pointer; color: var(--muted); background: var(--soft); }
+label.drop.over { border-color: var(--brass); background: var(--brass-soft); }
+label.drop strong { color: var(--ink); }
+label.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.files { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.file { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; display: flex; gap: 8px; align-items: baseline; }
+.file .fn { font-weight: 700; overflow-wrap: anywhere; flex: 1; min-width: 0; }
+.meta { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font-size: 11.5px; border-radius: 10px; padding: 2px 9px; background: var(--soft); white-space: nowrap; border: none; color: var(--ink); font-weight: 500; }
+.tag { font-size: 11px; font-weight: 700; border-radius: 9px; padding: 1px 7px; background: var(--brass-soft); color: var(--brass); text-transform: uppercase; letter-spacing: .04em; }
+.f { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.f label, .lbl { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--navy); }
+textarea, select, input[type=number], input[type=password] { font: inherit; font-size: 13.5px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; }
+textarea { resize: vertical; line-height: 1.45; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; margin: 10px 0; }
+.check input { margin-top: 3px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.status { font-size: 12.5px; color: var(--muted); }
+.status.err { color: var(--bad); }
+.runbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.runbar .sp { flex: 1; }
+.banner { font-size: 12.5px; padding: 8px 11px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); margin-bottom: 12px; }
+.empty { color: var(--muted); max-width: 62ch; }
+.empty h3 { font-family: var(--f-display); font-size: 22px; color: var(--ink); margin: 6px 0 8px; font-weight: 600; }
+.empty ul { padding-left: 20px; }
+.md { max-width: 84ch; overflow-wrap: anywhere; }
+.md h1 { font-family: var(--f-display); font-size: 26px; font-weight: 600; color: var(--navy); margin: 0 0 6px; text-wrap: balance; }
+.md h2 { font-size: 16px; margin: 22px 0 8px; padding-left: 9px; border-left: 3px solid var(--brass); text-wrap: balance; }
+.md h2.internal { border-left-color: var(--warn); color: var(--warn); }
+.md h3 { font-size: 14px; margin: 16px 0 6px; }
+.md p, .md li { line-height: 1.6; }
+.md ul, .md ol { padding-left: 22px; }
+.tbl { overflow-x: auto; margin: 8px 0 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th { text-align: left; background: var(--soft); font-weight: 700; padding: 6px 9px; border-bottom: 2px solid var(--line); white-space: nowrap; }
+td { padding: 5px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+.md code { font-family: var(--f-mono); font-size: 12px; background: var(--soft); padding: 0 4px; border-radius: 3px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 18px; }
+.note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+@media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { border: 1px solid var(--line); border-radius: 6px; padding: 9px 11px; }
+.kpi .l { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.kpi .v { font-size: 22px; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+.kpi.alert .v { color: var(--bad); }
+.pill { display: inline-block; border-radius: 9px; padding: 0 8px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+.p1 { background: var(--bad-bg); color: var(--bad); } .p2 { background: var(--warn-bg); color: var(--warn); } .p3 { background: var(--brass-soft); color: var(--brass); } .p4 { background: var(--plan-bg); color: var(--plan); }
+.issues { margin: 8px 0 0; padding-left: 18px; font-size: 12.5px; }
+.issues li { margin: 3px 0; }
+.issues .out { color: var(--bad); font-weight: 600; }
+details.map summary { cursor: pointer; font-size: 13px; font-weight: 600; margin: 8px 0; }
+.mapgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 6px 10px; align-items: center; font-size: 12.5px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 8px; align-items: center; }
+.filters select { width: auto; }
+h3.sec { font-size: 14px; margin: 18px 0 6px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header class="top">
+  <h1>Client Policy <span>Review</span></h1>
+  <p>Upload a client's policy detail PDFs or screenshots and get a clear policy summary, with points to discuss and internal advisor notes.</p>
+</header>
+
+<section class="card" aria-labelledby="k1" style="margin-bottom:18px">
+  <div class="step"><b>SETUP</b><h2 id="k1">Your Anthropic API key</h2><span class="sp"></span><span class="status" id="keyState"></span></div>
+  <p class="hint">Needed to write summaries. Create one at console.anthropic.com under API keys; use is billed to your Anthropic account. The key is saved only in this browser on this device and is sent only to Anthropic. Set a monthly spend limit in the console, and don't save the key on shared computers.</p>
+  <div class="row"><input type="password" id="apiKey" autocomplete="off" spellcheck="false" placeholder="sk-ant-..." style="flex:1;min-width:220px" aria-label="Anthropic API key"><button type="button" id="keySave">Save key</button><button type="button" class="link" id="keyClear">Remove</button></div>
+</section>
+
+<!-- ================= ONE CLIENT ================= -->
+<div class="grid" id="mode-client">
+<div class="col">
+<section class="card" aria-labelledby="a1">
+  <div class="step"><b>STEP 1</b><h2 id="a1">Upload the client's policy records</h2><span class="sp"></span><button class="link" id="aClear" type="button">Clear</button></div>
+  <label class="drop" id="aDrop"><input type="file" id="aInput" multiple accept=".pdf,.png,.jpg,.jpeg,.webp"><strong>Choose files</strong> or drop them here<br><span style="font-size:12px">Policy detail PDFs or screenshots · all policies of one client</span></label>
+  <div class="files" id="aFiles"></div>
+  <label class="check"><input type="checkbox" id="aMask" checked><span><b>Hide IC, email, phone and card numbers</b> in PDF text before sending. Screenshots are sent as they are.</span></label>
+</section>
+<section class="card" aria-labelledby="a2">
+  <div class="step"><b>STEP 2</b><h2 id="a2">Anything to note?</h2><span class="sp"></span><span class="status">Optional</span></div>
+  <div class="f"><label for="aNotes">Client notes for this review</label><textarea id="aNotes" rows="3" placeholder="e.g. Planning to retire at 55. Has two young children. Asked about medical card upgrade."></textarea></div>
+  <div class="runbar"><button class="primary" id="aRun" type="button" disabled>Write policy summary</button><button id="aStop" type="button" hidden>Stop</button><span class="status" id="aMsg"></span></div>
+</section>
+</div>
+<div class="col">
+<section class="card" aria-labelledby="a3" style="min-height:420px">
+  <div class="step"><b>STEP 3</b><h2 id="a3">Policy summary</h2></div>
+  <div class="empty" id="aEmpty">
+    <h3>The client's summary appears here</h3>
+    <p>Upload the policy detail pages for one client (one PDF or screenshot per policy is fine) and press <b>Write policy summary</b>. You get:</p>
+    <ul><li>Client details and an at-a-glance view: policies, premium payable, fund value</li><li>Policy overview and coverage by benefit across all policies</li><li>Investment funds, nomination and ownership</li><li>Points to discuss with the client</li><li><b>Advisor notes</b> (internal): inconsistencies and things to verify</li></ul>
+    <p>Figures are copied exactly from the records. Benefits are never guessed from plan names; anything inferred is marked and kept in the advisor notes.</p>
+  </div>
+  <div class="md" id="aOut" hidden></div>
+  <div class="actions" id="aActions" hidden>
+    <button type="button" id="aCopy">Copy</button>
+    <button type="button" id="aDlClient">Download client copy</button>
+    <button type="button" id="aDlFull">Download with advisor notes</button>
+    <span class="status" id="aActMsg"></span>
+  </div>
+  <p class="note">Files are read in this browser and sent to Anthropic with your API key only when you press the button. The client copy leaves out the advisor notes. Check the summary against the policy contract before giving it to the client.</p>
+</section>
+</div>
+</div>
+
+</div>
+
+<script type="module">
+import Anthropic from "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.134.0/+esm";
+const TODAY = (() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); })();
+const $ = id => document.getElementById(id);
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const fmtDate = d => d instanceof Date ? `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}` : "";
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const rm = n => "RM " + Math.round(n || 0).toLocaleString("en-MY");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const norm = s => String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const isBlank = v => v === undefined || v === null || String(v).trim() === "";
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* convenience only */ } } };
+function setMsg(id, text, err) { const el = $(id); el.textContent = text || ""; el.classList.toggle("err", !!err); }
+
+// ---------- shared: Claude (Anthropic API, the user's own key kept in this browser) ----------
+const MODEL = "claude-opus-5-5";
+const KEY_STORE = "cpr.apiKey";
+let apiKey = store.get(KEY_STORE, "");
+function renderKey() {
+  setMsg("keyState", apiKey ? `Saved · ends ${apiKey.slice(-4)}` : "Not set", !apiKey);
+  $("apiKey").value = "";
+  $("apiKey").placeholder = apiKey ? "Paste a new key to replace it" : "sk-ant-...";
+  renderA();
+}
+$("keySave").onclick = () => {
+  const v = $("apiKey").value.trim();
+  if (!/^sk-ant-/.test(v)) { setMsg("keyState", "That doesn't look like an Anthropic API key (it starts with sk-ant-).", true); return; }
+  apiKey = v; store.set(KEY_STORE, v); renderKey();
+};
+$("keyClear").onclick = () => { apiKey = ""; try { localStorage.removeItem(KEY_STORE); } catch { /* nothing stored */ } renderKey(); };
+function errText(e) {
+  if (e instanceof Anthropic.APIUserAbortError) return "Stopped.";
+  if (e instanceof Anthropic.AuthenticationError) return "The API key was rejected. Check it in Setup above.";
+  if (e instanceof Anthropic.PermissionDeniedError) return "This API key isn't allowed to use this model.";
+  if (e instanceof Anthropic.RateLimitError) return "Rate limit or spend limit reached on your Anthropic account. Try again later.";
+  if (e instanceof Anthropic.BadRequestError) return `The request was rejected: ${e.message}`;
+  if (e instanceof Anthropic.APIConnectionError) return "Couldn't reach Anthropic. Check your internet connection.";
+  if (e instanceof Anthropic.APIError) return `Anthropic API error ${e.status ?? ""}. Try again in a moment.`;
+  return e?.message || "Something went wrong. Try again.";
+}
+const toBase64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = () => rej(r.error); r.readAsDataURL(blob); });
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+function renderMd(el, md) {
+  el.hidden = false;
+  const html = window.marked ? marked.parse(md) : esc(md).replace(/\n/g, "<br>");
+  el.innerHTML = window.DOMPurify ? DOMPurify.sanitize(html) : esc(md);
+  el.querySelectorAll("table").forEach(t => { const w = document.createElement("div"); w.className = "tbl"; t.replaceWith(w); w.append(t); });
+  el.querySelectorAll("h2").forEach(h => { if (/advisor notes/i.test(h.textContent)) h.classList.add("internal"); });
+}
+const cleanReport = text => { const i = text.search(/^# /m); return i > 0 ? text.slice(i) : text; };
+function save(filename, data, msgId) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([data], { type: "text/html;charset=utf-8" }));
+  a.download = filename; document.body.append(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  setMsg(msgId, "Downloaded. Open the file and print it to PDF if you need a PDF.");
+}
+async function copyText(text, el, msgId) {
+  try { await navigator.clipboard.writeText(text); setMsg(msgId, "Copied."); }
+  catch { const r = document.createRange(); r.selectNodeContents(el); getSelection().removeAllRanges(); getSelection().addRange(r); setMsg(msgId, "Press Ctrl+C to copy the selection."); }
+}
+const htmlDoc = (title, body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>body{font-family:"Segoe UI",Arial,sans-serif;color:#17213A;max-width:860px;margin:24px auto;padding:0 16px;line-height:1.55;background:#fff}h1{color:#1F2A44;font-family:Georgia,serif;margin-bottom:4px}h2{border-left:3px solid #9A7438;padding-left:9px;margin-top:24px;font-size:17px}h2.internal{border-left-color:#B54708;color:#B54708;break-before:page}table{border-collapse:collapse;width:100%;font-size:13px;margin:6px 0}th{background:#EDEFF3;text-align:left;padding:6px 9px}td{padding:5px 9px;border-bottom:1px solid #DFE2E8;vertical-align:top}@page{size:A4;margin:14mm}</style></head><body>${body}</body></html>`;
+function dropZone(zone, input, onFiles) {
+  input.addEventListener("change", e => { onFiles([...e.target.files]); e.target.value = ""; });
+  ["dragenter", "dragover"].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove("over"); }));
+  zone.addEventListener("drop", e => onFiles([...e.dataTransfer.files]));
+}
+
+// =====================================================================
+// ONE CLIENT: policy summary from the insurer's policy detail records
+// =====================================================================
+let aDocs = []; // {name, kind: "pdf"|"image", text?, pages?, blob?}
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+// PDF text rebuilt line by line (items grouped by their vertical position, left to right)
+async function pdfText(file) {
+  if (!window.pdfjsLib) throw new Error("The PDF reader did not load. Reload the page and try again.");
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  const pages = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const tc = await (await pdf.getPage(p)).getTextContent();
+    const lines = [];
+    for (const it of tc.items) {
+      if (!it.str || !it.str.trim()) continue;
+      const x = it.transform[4], y = it.transform[5];
+      let line = lines.find(l => Math.abs(l.y - y) < 2.5);
+      if (!line) { line = { y, items: [] }; lines.push(line); }
+      line.items.push({ x, s: it.str, w: it.width || 0 });
+    }
+    lines.sort((a, b) => b.y - a.y);
+    pages.push(lines.map(l => { l.items.sort((a, b) => a.x - b.x); let out = "", end = null; for (const i of l.items) { out += end === null ? i.s : (i.x - end > 6 ? "  |  " : i.x - end > 1.2 ? " " : "") + i.s; end = i.x + i.w; } return out.replace(/\s+\|\s+\|\s+/g, "  |  ").trim(); }).join("\n"));
+  }
+  return { pages: pdf.numPages, text: pages.map((t, i) => `--- page ${i + 1} ---\n${t}`).join("\n") };
+}
+function maskText(t) {
+  return t.replace(/\b(\d{6})-?(\d{2})-?(\d{4})\b/g, "$1-XX-XXXX")
+    .replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, "[email hidden]")
+    .replace(/\b(\d{4,6})[X*]{4,8}(\d{4})\b/g, "[card ending $2]")
+    .replace(/(Mobile No|Residence\s+Tel|Office\s+Tel|Contact No|Tel)(\s*\|?\s*)\+?\d[\d -]{7,13}\d/gi, "$1$2[phone hidden]")
+    .replace(/(Account no\.?)(\s*\|?\s*)[\d*X]{5,}/gi, "$1$2[hidden]");
+}
+function renderA() {
+  const box = $("aFiles"); box.textContent = "";
+  for (const d of aDocs) {
+    const el = document.createElement("div"); el.className = "file";
+    el.innerHTML = `<span class="fn"></span><span class="meta"></span>`;
+    el.querySelector(".fn").textContent = d.name;
+    el.querySelector(".meta").textContent = d.kind === "pdf" ? `${d.pages} page${d.pages > 1 ? "s" : ""} · ${d.text.length.toLocaleString()} chars${d.text.replace(/--- page \d+ ---/g, "").trim().length < 200 ? " · no text found (scanned?)" : ""}` : "screenshot";
+    box.append(el);
+  }
+  $("aRun").disabled = !aDocs.length;
+}
+dropZone($("aDrop"), $("aInput"), async files => {
+  const errs = [];
+  for (const f of files) {
+    try {
+      if (/\.pdf$/i.test(f.name) || f.type === "application/pdf") { const r = await pdfText(f); aDocs.push({ name: f.name, kind: "pdf", file: f, hasText: r.text.replace(/--- page \d+ ---/g, "").trim().length >= 200, ...r }); }
+      else if (IMAGE_TYPES.includes(f.type)) aDocs.push({ name: f.name, kind: "image", blob: f });
+      else errs.push(`${f.name} is not a PDF or image.`);
+    } catch (e) { errs.push(`${f.name}: ${e.message}`); }
+  }
+  renderA(); setMsg("aMsg", errs.join(" "), !!errs.length);
+});
+$("aClear").onclick = () => { aDocs = []; renderA(); };
+
+function clientPrompt(docs, notes, images) {
+  const today = fmtDate(TODAY);
+  return `You are helping a licensed insurance agent in Malaysia (servicing agent / Group Sales Manager) prepare a policy summary for ONE client from the insurer's policy detail records below. The agent will check it and give the client copy to the client.
+
+## Rules
+- Use only the records given${images ? " (text below and the attached screenshots)" : ""}. Copy every figure exactly as shown: sum assured, premiums, limits, dates, fund units, prices, values. Never invent or round figures.
+- Never infer what a plan or rider covers from its name or code. Describe a benefit only as far as the records state it (e.g. "Plan 200", "Annual limit RM 500,000"); otherwise write "see policy contract".
+- Do not diagnose or speculate about health. If statuses or dates suggest an event (e.g. a rider "Terminated (Living Assurance)" plus "Premium Waived"), state the facts in the client sections and put the possible meaning, marked "suggests ... confirm", ONLY in the Advisor notes.
+- Keep personal identifiers out: show IC as the first 6 digits followed by -XX-XXXX; no email, phone, card or bank account numbers.
+- If records for different people are mixed in, say so in the Advisor notes and summarise only the main policyholder.
+- Today is ${today} (Malaysia time). Compute ages from date of birth and say "age N".
+- Malaysian English, warm and plain for the client sections; concise and specific for the Advisor notes.
+
+## Output: Markdown, exactly these sections, starting with the title line and nothing before it
+# Policy Summary: <CLIENT NAME>
+Based on policy records as at <date shown in the records, else today> · <number> policies
+## Client details
+(table: Name, IC (masked), Date of birth & age, Gender / smoker, Role on the policies)
+## At a glance
+(table: policies in force, total premium the client pays per month and per year (exclude waived premiums, and say which are waived), total fund / surrender value, outstanding debts)
+## Policy overview
+(table, one row per policy: Policy no., Plan, Start date, Status, Premium status, Premium & frequency, Payment method, Next due, Fund value)
+## Coverage by benefit
+(table across all policies: Benefit type (Life, Critical illness, Medical, Accident, Premium waiver, Savings, Other), Policy, Plan / rider (exact name and code), Sum assured / limits, Cover until (with the client's age then), Status. Include ended riders with their end date and reason.)
+## Investment funds
+(only if any policy has funds: fund, allocation %, units, price & date, value)
+## Nomination and ownership
+(nominees, trust, assignee, payer as recorded; say clearly if none is recorded)
+## Points to discuss with the client
+(3-6 bullets in plain, client-friendly language: gaps such as no nominee or no active critical illness cover, overlapping medical cards, ending covers, contact details to update. No internal speculation here.)
+## Advisor notes (internal)
+(table: Item | What the records show | Action. Include: anything to verify against the policy contract or schedule, unusual figures, payment or due-date inconsistencies, inferred events marked "suggests ... confirm", waiver duration and fund sustainability for investment-linked policies, address or contact mismatches between policies, and underwriting considerations stated cautiously: the insurer decides.)
+${notes ? `\n## Agent's notes about this client (use them in "Points to discuss" where relevant)\n${notes}\n` : ""}
+## Policy records
+${docs.map(d => `### File: ${d.name}\n${d.text}`).join("\n\n") || "(screenshots only, attached)"}`;
+}
+
+let aCtl = null, aMd = "", aTitle = "Policy Summary";
+$("aRun").onclick = async () => {
+  if (!aDocs.length) return;
+  if (!apiKey) { setMsg("aMsg", "Add your Anthropic API key in Setup first.", true); $("apiKey").focus(); return; }
+  // PDFs with a text layer go as (masked) text; scanned PDFs and screenshots go as files Claude reads directly
+  const pdfs = aDocs.filter(d => d.kind === "pdf" && d.hasText).map(d => ({ name: d.name, text: $("aMask").checked ? maskText(d.text) : d.text }));
+  const files = aDocs.filter(d => d.kind === "image" || (d.kind === "pdf" && !d.hasText));
+  aCtl = new AbortController();
+  $("aRun").disabled = true; $("aStop").hidden = false; $("aActions").hidden = true;
+  setMsg("aMsg", "Reading the records… (usually under a minute)");
+  let text = "";
+  try {
+    const content = [];
+    for (const d of files) content.push(d.kind === "image"
+      ? { type: "image", source: { type: "base64", media_type: d.blob.type, data: await toBase64(d.blob) } }
+      : { type: "document", source: { type: "base64", media_type: "application/pdf", data: await toBase64(d.file) } });
+    content.push({ type: "text", text: clientPrompt(pdfs, $("aNotes").value.trim(), files.length > 0) });
+    const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+    const stream = client.beta.messages.stream({
+      model: MODEL,
+      max_tokens: 64000,
+      output_config: { effort: "high" },
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      messages: [{ role: "user", content }],
+    }, { signal: aCtl.signal });
+    stream.on("text", delta => { text += delta; $("aEmpty").hidden = true; renderMd($("aOut"), cleanReport(text)); setMsg("aMsg", "Writing…"); });
+    const msg = await stream.finalMessage();
+    if (msg.stop_reason === "refusal") { $("aOut").hidden = true; $("aEmpty").hidden = false; setMsg("aMsg", "Claude declined to write this summary. Check the files are policy records and try again.", true); return; }
+    aMd = cleanReport(text); renderMd($("aOut"), aMd); $("aEmpty").hidden = true;
+    aTitle = (aMd.match(/^# (.+)$/m) || [, "Policy Summary"])[1].trim();
+    $("aActions").hidden = false;
+    const cut = msg.stop_reason === "max_tokens";
+    setMsg("aMsg", cut ? "The summary was cut short. Try fewer files at a time." : "Done. Check it against the policy contract before sharing.", cut);
+  } catch (e) {
+    if (text) renderMd($("aOut"), cleanReport(text));
+    setMsg("aMsg", errText(e), !(e instanceof Anthropic.APIUserAbortError));
+  } finally { $("aRun").disabled = !aDocs.length; $("aStop").hidden = true; }
+};
+$("aStop").onclick = () => aCtl?.abort();
+const clientCopyMd = md => md.split(/^## Advisor notes.*$/im)[0].trim();
+const aFile = suffix => `${aTitle.replace(/^Policy Summary:?\s*/i, "").replace(/[\\/:*?"<>|]/g, "").trim() || "Client"} - Policy Summary${suffix} ${iso(TODAY)}.html`;
+const mdHtml = md => { const d = document.createElement("div"); renderMd(d, md); return d.innerHTML; };
+$("aCopy").onclick = () => copyText(aMd, $("aOut"), "aActMsg");
+$("aDlClient").onclick = () => save(aFile(""), htmlDoc(aTitle, mdHtml(clientCopyMd(aMd)) + `<p style="color:#5E6878;font-size:12px;margin-top:24px">This summary is for easy reference and is not a policy document. If anything differs from your policy contract or the insurer's records, the policy contract and the insurer's records apply.</p>`), "aActMsg");
+$("aDlFull").onclick = () => save(aFile(" (with advisor notes)"), htmlDoc(aTitle, mdHtml(aMd) + `<p style="color:#B54708;font-size:12px;margin-top:24px">Contains internal advisor notes. Do not give to the client.</p>`), "aActMsg");
+
+// ---------- start ----------
+renderKey();
+</script>
+</body>
+</html>
