@@ -1,12 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#1F2A44"/>
-  <!-- policy document -->
-  <path d="M150 92h150l72 72v236a22 22 0 0 1-22 22H150a22 22 0 0 1-22-22V114a22 22 0 0 1 22-22z" fill="#F7F4EE"/>
-  <path d="M300 92v54a18 18 0 0 0 18 18h54z" fill="#D9CBB0"/>
-  <rect x="164" y="190" width="150" height="16" rx="8" fill="#C5CBD6"/>
-  <rect x="164" y="226" width="176" height="16" rx="8" fill="#C5CBD6"/>
-  <rect x="164" y="262" width="120" height="16" rx="8" fill="#C5CBD6"/>
-  <!-- review shield with tick -->
-  <path d="M330 270l64 24v46c0 44-28 72-64 86-36-14-64-42-64-86v-46z" fill="#B8893F"/>
-  <path d="M302 344l20 20 40-42" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1F3A5F"/><stop offset="1" stop-color="#0F6B6B"/></linearGradient></defs>
+  <rect width="512" height="512" fill="url(#g)"/>
+  <!-- protection umbrella -->
+  <path d="M256 104c-98 0-172 70-180 150h360c-8-80-82-150-180-150z" fill="#FFFFFF"/>
+  <path d="M76 254c20-18 40-18 60 0 20-18 40-18 60 0 20-18 40-18 60 0 20-18 40-18 60 0 20-18 40-18 60 0 20-18 40-18 60 0" fill="none" stroke="#FFFFFF" stroke-width="6"/>
+  <path d="M256 254v120a34 34 0 0 1-68 0" fill="none" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round"/>
+  <path d="M256 84v24" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round"/>
+  <!-- reviewed tick -->
+  <path d="M300 330l20 20 42-44" fill="none" stroke="#F2C76B" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
