@@ -1,0 +1,14 @@
+{
+  "name": "Client Policy Review",
+  "short_name": "Policy Review",
+  "description": "Turn a client's policy detail PDFs into a clear policy summary.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1F2A44",
+  "theme_color": "#1F2A44",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

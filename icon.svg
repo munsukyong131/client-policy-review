@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#1F2A44"/>
+  <!-- policy document -->
+  <path d="M150 92h150l72 72v236a22 22 0 0 1-22 22H150a22 22 0 0 1-22-22V114a22 22 0 0 1 22-22z" fill="#F7F4EE"/>
+  <path d="M300 92v54a18 18 0 0 0 18 18h54z" fill="#D9CBB0"/>
+  <rect x="164" y="190" width="150" height="16" rx="8" fill="#C5CBD6"/>
+  <rect x="164" y="226" width="176" height="16" rx="8" fill="#C5CBD6"/>
+  <rect x="164" y="262" width="120" height="16" rx="8" fill="#C5CBD6"/>
+  <!-- review shield with tick -->
+  <path d="M330 270l64 24v46c0 44-28 72-64 86-36-14-64-42-64-86v-46z" fill="#B8893F"/>
+  <path d="M302 344l20 20 40-42" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
