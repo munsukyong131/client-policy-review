@@ -1,28 +1,18 @@
 # Client Policy Review
 
-A one-page web app for insurance agents. Upload one client's policy detail PDFs or screenshots and get a clear policy summary:
+Public page: **https://munsukyong131.github.io/client-policy-review/**
 
-- Client details and an at-a-glance view (policies, premium payable, fund value)
-- Policy overview and coverage by benefit across all policies
-- Investment funds, nomination and ownership
-- Points to discuss with the client
-- Advisor notes (internal) — things to verify, kept out of the client copy
+Insurance agents upload one client's policy detail PDFs or screenshots and get a clear policy summary: client details, policy overview, coverage by benefit, investment funds, nomination, points to discuss, and internal advisor notes (left out of the client copy).
 
-Figures are copied exactly from the records; benefits are never guessed from plan names.
+The app itself runs on claude.ai (users sign in with their own Claude account, so no API key is needed). This repository hosts the public page that links to it.
 
 ## How to use
 
-1. Open the app link.
-2. Under **Setup**, paste your Anthropic API key (create one at console.anthropic.com → API keys). It is saved only in your browser on that device and sent only to Anthropic.
-3. Upload the client's policy detail PDFs or screenshots.
-4. Press **Write policy summary**, then download the client copy or the version with advisor notes.
+1. Open the public page and press **Open the app**.
+2. Sign in to claude.ai.
+3. Upload the client's policy detail PDFs or screenshots and press **Write policy summary**.
+4. Download the client copy, or the version with advisor notes.
 
 ## Privacy
 
-- Files are read in your browser. Nothing is stored on GitHub or any server.
-- PDF text is sent to Anthropic only when you press the button. IC, email, phone and card numbers are masked first (on by default). Screenshots and scanned PDFs are sent as they are.
-- Each user's API key stays in their own browser. Set a monthly spend limit in the Anthropic console, and don't save the key on shared computers.
-
-## Technical notes
-
-Single static `index.html` (no build step). Uses the official Anthropic TypeScript SDK in the browser (model `claude-opus-5-5`), pdf.js for reading PDFs, marked + DOMPurify for rendering.
+Files are read in the browser and sent to Claude only when the button is pressed. IC, email, phone and card numbers in PDF text are masked first. Nothing is stored in this repository.
